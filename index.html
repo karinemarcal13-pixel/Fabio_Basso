@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Farmácia · Controle de Estoque</title>
+<style>
+:root{--bg:#fafbfc;--card:#fff;--tx:#1c2230;--mut:#677085;--bd:#e3e6ec;--ac:#2f5bea;--acs:#e8eefe;--ok:#0f8a5f;--oks:#e2f5ed;--wn:#a86a10;--wns:#fcf1d9;--bad:#c0392b;--bads:#fce8e6;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+h1{font-size:20px;font-weight:600;margin:0}
+h2{font-size:16px;font-weight:600;margin:0 0 12px}
+nav{display:flex;gap:4px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:4px;overflow-x:auto;max-width:100%}
+nav button{border:0;background:none;color:var(--mut);padding:7px 14px;border-radius:7px;font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--acs);color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.kpi small{color:var(--mut);display:block}
+.kpi b{font-size:22px;font-weight:600}
+.two{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.bar .sp{flex:1}
+input,select,button,textarea{font:inherit;color:var(--tx)}
+input,select,textarea{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%}
+.bar input,.bar select{width:auto;min-width:130px}
+.bar input[type=search]{flex:1;min-width:180px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.btn{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--ac)}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.sm{padding:3px 9px;font-size:13px}
+.btn.del{color:var(--bad)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--bd);vertical-align:middle}
+th{color:var(--mut);font-weight:500;font-size:13px}
+td.r,th.r{text-align:right}
+td.act{white-space:nowrap;text-align:right}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px}
+.t-ok{background:var(--oks);color:var(--ok)}.t-baixo{background:var(--wns);color:var(--wn)}.t-zerado{background:var(--bads);color:var(--bad)}
+.t-entrada{background:var(--oks);color:var(--ok)}.t-saida{background:var(--bads);color:var(--bad)}.t-ajuste{background:var(--acs);color:var(--ac)}
+.mut{color:var(--mut)}
+.empty{text-align:center;color:var(--mut);padding:28px 8px}
+ul.l{list-style:none;margin:0;padding:0}
+ul.l li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.add{display:flex;gap:8px;margin-bottom:10px}
+dialog{border:1px solid var(--bd);border-radius:14px;background:var(--card);color:var(--tx);padding:20px;width:min(520px,94vw)}
+dialog::backdrop{background:rgba(255,255,255,.7)}
+.f{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+.f label{display:block;font-size:13px;color:var(--mut)}
+.f .full{grid-column:1/-1}
+.ft{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card);color:var(--tx);border:1px solid var(--bd);box-shadow:0 4px 14px rgba(20,30,50,.12);padding:9px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:90vw}
+#toast.on{opacity:1}
+section{display:none}section.on{display:block}
+@media(max-width:520px){.f{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>💊 Farmácia · Controle de Estoque</h1>
+  <nav id="nav">
+    <button data-v="painel" class="on">Painel</button>
+    <button data-v="produtos">Produtos</button>
+    <button data-v="movs">Movimentações</button>
+    <button data-v="cad">Cadastros</button>
+    <button data-v="dados">Dados</button>
+  </nav>
+</header>
+
+<section id="painel" class="on">
+  <div class="grid" id="kpis"></div>
+  <div class="two">
+    <div class="card"><h2>Estoque baixo ou zerado</h2><div id="baixos"></div></div>
+    <div class="card"><h2>Últimas movimentações</h2><div id="ultimas"></div></div>
+  </div>
+</section>
+
+<section id="produtos">
+  <div class="card">
+    <div class="bar">
+      <input type="search" id="pq" placeholder="Buscar por nome ou código">
+      <select id="pcat"></select>
+      <select id="pst"><option value="">Todos os status</option><option value="ok">Em estoque</option><option value="baixo">Estoque baixo</option><option value="zerado">Zerado</option></select>
+      <button class="btn pri" id="novoProd">+ Novo produto</button>
+    </div>
+    <div class="tw"><table><thead><tr><th>Código</th><th>Produto</th><th>Categoria</th><th class="r">Qtd.</th><th class="r">Mín.</th><th class="r">Custo</th><th class="r">Venda</th><th>Status</th><th></th></tr></thead><tbody id="ptb"></tbody></table></div>
+  </div>
+</section>
+
+<section id="movs">
+  <div class="card">
+    <div class="bar">
+      <input type="search" id="mq" placeholder="Buscar produto">
+      <select id="mtp"><option value="">Todos os tipos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option><option value="ajuste">Ajustes</option></select>
+      <span class="sp"></span>
+      <button class="btn pri" id="novaMov">+ Nova movimentação</button>
+    </div>
+    <div class="tw"><table><thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th class="r">Qtd.</th><th class="r">Saldo</th><th>Motivo</th></tr></thead><tbody id="mtb"></tbody></table></div>
+  </div>
+</section>
+
+<section id="cad">
+  <div class="two">
+    <div class="card"><h2>Categorias</h2>
+      <div class="add"><input id="ncat" placeholder="Nova categoria"><button class="btn pri" id="addCat">Adicionar</button></div>
+      <ul class="l" id="lcat"></ul></div>
+    <div class="card"><h2>Fornecedores</h2>
+      <div class="add"><input id="nfor" placeholder="Novo fornecedor"><button class="btn pri" id="addFor">Adicionar</button></div>
+      <ul class="l" id="lfor"></ul></div>
+  </div>
+</section>
+
+<section id="dados">
+  <div class="card">
+    <h2>Exportar e backup</h2>
+    <p class="mut">Os dados ficam salvos neste navegador. Faça backup de vez em quando.</p>
+    <div class="bar">
+      <button class="btn" id="expCsv">Exportar produtos (CSV)</button>
+      <button class="btn" id="expMov">Exportar movimentações (CSV)</button>
+      <button class="btn" id="expJson">Backup completo (JSON)</button>
+      <label class="btn" style="margin:0">Restaurar backup<input type="file" id="impJson" accept=".json" hidden></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Outras ações</h2>
+    <div class="bar">
+      <button class="btn" id="demo">Carregar exemplos</button>
+      <button class="btn del" id="limpar">Apagar tudo</button>
+    </div>
+  </div>
+</section>
+</div>
+
+<dialog id="dProd">
+  <form id="fProd">
+    <h2 id="tProd">Novo produto</h2>
+    <div class="f">
+      <div><label>Código (SKU)</label><input id="pSku" required></div>
+      <div><label>Nome</label><input id="pNome" required></div>
+      <div><label>Categoria</label><select id="pCat"></select></div>
+      <div><label>Fornecedor</label><select id="pFor"></select></div>
+      <div><label>Preço de custo (R$)</label><input id="pCusto" type="number" min="0" step="0.01" value="0"></div>
+      <div><label>Preço de venda (R$)</label><input id="pPreco" type="number" min="0" step="0.01" value="0"></div>
+      <div><label>Estoque mínimo</label><input id="pMin" type="number" min="0" step="1" value="0"></div>
+      <div><label id="lQtd">Quantidade inicial</label><input id="pQtd" type="number" min="0" step="1" value="0"></div>
+    </div>
+    <div class="ft"><button type="button" class="btn" data-close>Cancelar</button><button class="btn pri">Salvar</button></div>
+  </form>
+</dialog>
+
+<dialog id="dMov">
+  <form id="fMov">
+    <h2>Nova movimentação</h2>
+    <div class="f">
+      <div class="full"><label>Produto</label><select id="mProd" required></select></div>
+      <div><label>Tipo</label><select id="mTipo"><option value="entrada">Entrada</option><option value="saida">Saída</option><option value="ajuste">Ajuste (contagem)</option></select></div>
+      <div><label id="lMq">Quantidade</label><input id="mQtd" type="number" min="0" step="1" required></div>
+      <div class="full"><label>Motivo / observação</label><input id="mMot" placeholder="Ex.: compra, venda, perda, inventário"></div>
+      <div class="full mut" id="mInfo"></div>
+    </div>
+    <div class="ft"><button type="button" class="btn" data-close>Cancelar</button><button class="btn pri">Registrar</button></div>
+  </form>
+</dialog>
+
+<dialog id="dConf">
+  <p id="cMsg"></p>
+  <div class="ft"><button class="btn" id="cNo">Cancelar</button><button class="btn pri" id="cYes">Confirmar</button></div>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const K='estoque_v2';
+let db={produtos:[],movs:[],categorias:['Geral'],fornecedores:[]};
+let fresh=false;try{const r=localStorage.getItem(K);fresh=!r;if(r)db=Object.assign(db,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(db))}catch(e){toast('Não foi possível salvar neste navegador')}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const brl=n=>(+n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fd=d=>new Date(d).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+const prod=id=>db.produtos.find(p=>p.id===id);
+const status=p=>p.qtd<=0?'zerado':p.qtd<=p.min?'baixo':'ok';
+const stLabel={ok:'Em estoque',baixo:'Estoque baixo',zerado:'Zerado'};
+const tpLabel={entrada:'Entrada',saida:'Saída',ajuste:'Ajuste'};
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
+
+function ask(msg){return new Promise(res=>{$('#cMsg').textContent=msg;const d=$('#dConf');const done=v=>{d.close();res(v)};$('#cYes').onclick=()=>done(true);$('#cNo').onclick=()=>done(false);d.showModal()})}
+
+/* navegação */
+function go(v){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===v));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render()}
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.v)};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
+
+/* painel */
+function renderPainel(){
+  const P=db.produtos,un=P.reduce((a,p)=>a+p.qtd,0),custo=P.reduce((a,p)=>a+p.qtd*p.custo,0),venda=P.reduce((a,p)=>a+p.qtd*p.preco,0);
+  const bx=P.filter(p=>status(p)!=='ok');
+  $('#kpis').innerHTML=[['Produtos',P.length],['Unidades em estoque',un],['Valor em custo',brl(custo)],['Valor de venda',brl(venda)],['Alertas',bx.length]].map(k=>`<div class="kpi"><small>${k[0]}</small><b>${k[1]}</b></div>`).join('');
+  $('#baixos').innerHTML=bx.length?`<ul class="l">${bx.sort((a,b)=>a.qtd-b.qtd).map(p=>`<li><span>${esc(p.nome)} <span class="mut">(${p.qtd} de mín. ${p.min})</span></span><span class="tag t-${status(p)}">${stLabel[status(p)]}</span></li>`).join('')}</ul>`:'<div class="empty">Nenhum alerta no momento.</div>';
+  const u=db.movs.slice().sort((a,b)=>b.data-a.data).slice(0,6);
+  $('#ultimas').innerHTML=u.length?`<ul class="l">${u.map(m=>`<li><span>${esc(m.nome)} <span class="mut">${fd(m.data)}</span></span><span class="tag t-${m.tipo}">${tpLabel[m.tipo]} ${m.tipo==='ajuste'?'→ '+m.apos:m.qtd}</span></li>`).join('')}</ul>`:'<div class="empty">Sem movimentações ainda.</div>';
+}
+
+/* produtos */
+function fillSel(el,arr,first){el.innerHTML=(first!==undefined?`<option value="">${first}</option>`:'')+arr.map(x=>`<option>${esc(x)}</option>`).join('')}
+function renderProdutos(){
+  const cv=$('#pcat').value;fillSel($('#pcat'),db.categorias,'Todas as categorias');$('#pcat').value=db.categorias.includes(cv)?cv:'';
+  const q=$('#pq').value.toLowerCase(),c=$('#pcat').value,s=$('#pst').value;
+  const L=db.produtos.filter(p=>(!q||p.nome.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q))&&(!c||p.cat===c)&&(!s||status(p)===s)).sort((a,b)=>a.nome.localeCompare(b.nome));
+  $('#ptb').innerHTML=L.length?L.map(p=>`<tr><td>${esc(p.sku)}</td><td>${esc(p.nome)}<div class="mut" style="font-size:12px">${esc(p.forn||'')}</div></td><td>${esc(p.cat)}</td><td class="r">${p.qtd}</td><td class="r">${p.min}</td><td class="r">${brl(p.custo)}</td><td class="r">${brl(p.preco)}</td><td><span class="tag t-${status(p)}">${stLabel[status(p)]}</span></td><td class="act"><button class="btn sm" data-a="ent" data-id="${p.id}">+ Entrada</button> <button class="btn sm" data-a="sai" data-id="${p.id}">− Saída</button> <button class="btn sm" data-a="ed" data-id="${p.id}">Editar</button> <button class="btn sm del" data-a="rm" data-id="${p.id}">Excluir</button></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum produto encontrado.</td></tr>';
+}
+['pq','pcat','pst'].forEach(i=>$('#'+i).oninput=renderProdutos);
+$('#ptb').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const id=b.dataset.id,a=b.dataset.a;
+  if(a==='ed')openProd(id);
+  if(a==='ent')openMov('entrada',id);
+  if(a==='sai')openMov('saida',id);
+  if(a==='rm'){const p=prod(id);if(await ask(`Excluir “${p.nome}”? O histórico de movimentações será mantido.`)){db.produtos=db.produtos.filter(x=>x.id!==id);save();render();toast('Produto excluído')}}};
+
+let editId=null;
+function openProd(id){
+  editId=id||null;const p=id?prod(id):null;
+  fillSel($('#pCat'),db.categorias);fillSel($('#pFor'),db.fornecedores,'Sem fornecedor');
+  $('#tProd').textContent=p?'Editar produto':'Novo produto';
+  $('#pSku').value=p?p.sku:'';$('#pNome').value=p?p.nome:'';$('#pCat').value=p?p.cat:db.categorias[0];$('#pFor').value=p?p.forn||'':'';
+  $('#pCusto').value=p?p.custo:0;$('#pPreco').value=p?p.preco:0;$('#pMin').value=p?p.min:0;
+  $('#pQtd').value=p?p.qtd:0;$('#pQtd').disabled=!!p;$('#lQtd').textContent=p?'Quantidade atual (use Movimentações)':'Quantidade inicial';
+  $('#dProd').showModal();
+}
+$('#novoProd').onclick=()=>openProd();
+$('#fProd').onsubmit=e=>{e.preventDefault();
+  const sku=$('#pSku').value.trim(),nome=$('#pNome').value.trim();
+  if(db.produtos.some(p=>p.sku.toLowerCase()===sku.toLowerCase()&&p.id!==editId))return toast('Já existe um produto com esse código');
+  const d={sku,nome,cat:$('#pCat').value,forn:$('#pFor').value,custo:+$('#pCusto').value||0,preco:+$('#pPreco').value||0,min:Math.max(0,parseInt($('#pMin').value)||0)};
+  if(editId){Object.assign(prod(editId),d)}
+  else{const q=Math.max(0,parseInt($('#pQtd').value)||0);const p={id:uid(),qtd:q,...d};db.produtos.push(p);if(q>0)db.movs.push({id:uid(),pid:p.id,nome:p.nome,tipo:'entrada',qtd:q,apos:q,motivo:'Estoque inicial',data:Date.now()})}
+  save();$('#dProd').close();render();toast('Produto salvo')};
+
+/* movimentações */
+function renderMovs(){
+  const q=$('#mq').value.toLowerCase(),t=$('#mtp').value;
+  const L=db.movs.filter(m=>(!q||m.nome.toLowerCase().includes(q))&&(!t||m.tipo===t)).sort((a,b)=>b.data-a.data);
+  $('#mtb').innerHTML=L.length?L.map(m=>`<tr><td>${fd(m.data)}</td><td>${esc(m.nome)}</td><td><span class="tag t-${m.tipo}">${tpLabel[m.tipo]}</span></td><td class="r">${m.tipo==='saida'?'−':m.tipo==='entrada'?'+':'±'}${m.qtd}</td><td class="r">${m.apos}</td><td class="mut">${esc(m.motivo||'')}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhuma movimentação registrada.</td></tr>';
+}
+['mq','mtp'].forEach(i=>$('#'+i).oninput=renderMovs);
+function movInfo(){const p=prod($('#mProd').value);if(!p){$('#mInfo').textContent='';return}
+  const t=$('#mTipo').value;$('#lMq').textContent=t==='ajuste'?'Nova quantidade em estoque':'Quantidade';
+  $('#mInfo').textContent=`Saldo atual: ${p.qtd} unidade(s)`}
+$('#mProd').onchange=$('#mTipo').onchange=movInfo;
+function openMov(tipo,id){
+  if(!db.produtos.length)return toast('Cadastre um produto primeiro');
+  $('#mProd').innerHTML=db.produtos.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).map(p=>`<option value="${p.id}">${esc(p.nome)} (${esc(p.sku)})</option>`).join('');
+  if(id)$('#mProd').value=id;$('#mTipo').value=tipo||'entrada';$('#mQtd').value='';$('#mMot').value='';movInfo();$('#dMov').showModal();
+}
+$('#novaMov').onclick=()=>openMov();
+$('#fMov').onsubmit=e=>{e.preventDefault();
+  const p=prod($('#mProd').value),t=$('#mTipo').value,n=parseInt($('#mQtd').value);
+  if(!p||isNaN(n)||n<0||(t!=='ajuste'&&n<1))return toast('Informe uma quantidade válida');
+  let apos;
+  if(t==='entrada')apos=p.qtd+n;
+  else if(t==='saida'){if(n>p.qtd)return toast(`Saída maior que o saldo (${p.qtd})`);apos=p.qtd-n}
+  else apos=n;
+  db.movs.push({id:uid(),pid:p.id,nome:p.nome,tipo:t,qtd:t==='ajuste'?Math.abs(apos-p.qtd):n,apos,motivo:$('#mMot').value.trim(),data:Date.now()});
+  p.qtd=apos;save();$('#dMov').close();render();toast('Movimentação registrada')};
+
+/* cadastros */
+function renderCad(){
+  const li=(arr,k,uso)=>arr.length?arr.map(x=>`<li><span>${esc(x)} <span class="mut">(${uso(x)})</span></span><button class="btn sm del" data-k="${k}" data-n="${esc(x)}">Remover</button></li>`).join(''):'<li class="mut">Nada cadastrado.</li>';
+  $('#lcat').innerHTML=li(db.categorias,'cat',x=>db.produtos.filter(p=>p.cat===x).length+' produtos');
+  $('#lfor').innerHTML=li(db.fornecedores,'for',x=>db.produtos.filter(p=>p.forn===x).length+' produtos');
+}
+function addItem(inp,key){const v=$(inp).value.trim();if(!v)return;
+  if(db[key].some(x=>x.toLowerCase()===v.toLowerCase()))return toast('Já cadastrado');
+  db[key].push(v);$(inp).value='';save();renderCad()}
+$('#addCat').onclick=()=>addItem('#ncat','categorias');
+$('#addFor').onclick=()=>addItem('#nfor','fornecedores');
+$('#ncat').onkeydown=e=>{if(e.key==='Enter')addItem('#ncat','categorias')};
+$('#nfor').onkeydown=e=>{if(e.key==='Enter')addItem('#nfor','fornecedores')};
+$('#cad').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const n=b.dataset.n,cat=b.dataset.k==='cat';
+  if(db.produtos.some(p=>(cat?p.cat:p.forn)===n))return toast('Há produtos usando este item');
+  if(cat&&db.categorias.length<=1)return toast('Mantenha ao menos uma categoria');
+  const k=cat?'categorias':'fornecedores';db[k]=db[k].filter(x=>x!==n);save();renderCad()};
+
+/* dados */
+async function baixar(nome,txt){
+  let d=null;try{d=await claude.use('downloads')}catch(e){}
+  if(!d){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download=nome;document.body.appendChild(a);a.click();a.remove();toast('Arquivo gerado')}catch(e){toast('Download indisponível nesta visualização')}return}
+  try{await d.save({filename:nome,data:txt});toast('Arquivo salvo')}catch(e){if(e&&e.code!=='declined')toast('Não foi possível salvar o arquivo')}}
+const csv=rows=>'\ufeff'+rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(';')).join('\n');
+$('#expCsv').onclick=()=>baixar('produtos.csv',csv([['Código','Produto','Categoria','Fornecedor','Quantidade','Mínimo','Custo','Venda','Status']].concat(db.produtos.map(p=>[p.sku,p.nome,p.cat,p.forn,p.qtd,p.min,String(p.custo).replace('.',','),String(p.preco).replace('.',','),stLabel[status(p)]]))));
+$('#expMov').onclick=()=>baixar('movimentacoes.csv',csv([['Data','Produto','Tipo','Quantidade','Saldo','Motivo']].concat(db.movs.map(m=>[fd(m.data),m.nome,tpLabel[m.tipo],m.qtd,m.apos,m.motivo]))));
+$('#expJson').onclick=()=>baixar('backup-estoque.json',JSON.stringify(db,null,2));
+$('#impJson').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=async()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.produtos)||!Array.isArray(d.movs))throw 0;
+    if(await ask('Restaurar este backup? Os dados atuais serão substituídos.')){db=Object.assign({categorias:['Geral'],fornecedores:[]},d);save();render();toast('Backup restaurado')}}catch(x){toast('Arquivo de backup inválido')}e.target.value=''};r.readAsText(f)};
+$('#demo').onclick=async()=>{if(db.produtos.length&&!await ask('Adicionar os 100 produtos de exemplo aos dados atuais?'))return;
+  ['Analgésicos e Febre', 'Gripe e Resfriado', 'Digestivo', 'Vitaminas e Suplementos', 'Dermocosméticos', 'Higiene Pessoal', 'Primeiros Socorros', 'Infantil e Bebê'].forEach(c=>{if(!db.categorias.includes(c))db.categorias.push(c)});
+  ['Dermo Distribuidora', 'Distribuidora Farma Sul', 'Medley Distribuidora', 'Pharma Brasil Atacado'].forEach(c=>{if(!db.fornecedores.includes(c))db.fornecedores.push(c)});
+  [["ANA001","Dipirona 500 mg 20 comp","Analgésicos e Febre","Distribuidora Farma Sul",4.2,7.9,5,4],["ANA002","Paracetamol 750 mg 20 comp","Analgésicos e Febre","Distribuidora Farma Sul",5.5,10.9,10,28],["ANA003","Ibuprofeno 400 mg 10 caps","Analgésicos e Febre","Distribuidora Farma Sul",9.8,17.9,15,35],["ANA004","Dorflex 36 comp","Analgésicos e Febre","Distribuidora Farma Sul",11.5,19.9,20,62],["ANA005","Neosaldina 30 drág","Analgésicos e Febre","Distribuidora Farma Sul",14.0,24.5,5,29],["ANA006","Buscopan Composto 20 comp","Analgésicos e Febre","Distribuidora Farma Sul",13.5,23.9,10,36],["ANA007","Torsilax 15 comp","Analgésicos e Febre","Distribuidora Farma Sul",9.9,17.5,15,63],["ANA008","Aspirina 500 mg 10 comp","Analgésicos e Febre","Distribuidora Farma Sul",5.9,10.5,20,70],["ANA009","Cataflam 50 mg 10 drág","Analgésicos e Febre","Distribuidora Farma Sul",13.0,22.9,5,0],["ANA010","Tylenol 500 mg 20 comp","Analgésicos e Febre","Distribuidora Farma Sul",9.5,16.9,10,24],["ANA011","Advil 400 mg 8 caps","Analgésicos e Febre","Distribuidora Farma Sul",10.5,18.9,15,31],["ANA012","Nimesulida 100 mg 12 comp","Analgésicos e Febre","Distribuidora Farma Sul",6.8,12.9,20,17],["ANA013","Dipirona gotas 20 ml","Analgésicos e Febre","Distribuidora Farma Sul",3.9,7.5,5,25],["GRI001","Benegrip 6 comp","Gripe e Resfriado","Medley Distribuidora",6.5,11.9,10,32],["GRI002","Resfenol 20 caps","Gripe e Resfriado","Medley Distribuidora",12.0,20.9,15,59],["GRI003","Naldecon Dia e Noite 12 comp","Gripe e Resfriado","Medley Distribuidora",11.5,19.9,20,66],["GRI004","Loratadina 10 mg 12 comp","Gripe e Resfriado","Medley Distribuidora",4.5,8.9,5,0],["GRI005","Allegra 120 mg 10 comp","Gripe e Resfriado","Medley Distribuidora",22.0,38.9,10,20],["GRI006","Descongestionante nasal 30 ml","Gripe e Resfriado","Medley Distribuidora",8.5,15.5,15,67],["GRI007","Sorine 50 ml","Gripe e Resfriado","Medley Distribuidora",9.5,16.9,20,18],["GRI008","Xarope Vick 120 ml","Gripe e Resfriado","Medley Distribuidora",14.0,24.9,5,21],["GRI009","Mucosolvan xarope 120 ml","Gripe e Resfriado","Medley Distribuidora",15.5,27.5,10,28],["GRI010","Pastilha Strepsils 12 un","Gripe e Resfriado","Medley Distribuidora",7.2,12.9,15,55],["GRI011","Benalet pastilhas 12 un","Gripe e Resfriado","Medley Distribuidora",5.9,10.5,20,62],["GRI012","Ambroxol xarope 120 ml","Gripe e Resfriado","Medley Distribuidora",6.9,12.5,5,29],["DIG001","Sonrisal 10 env","Digestivo","Distribuidora Farma Sul",8.5,14.9,10,56],["DIG002","Eno sal de fruta 5 g","Digestivo","Distribuidora Farma Sul",1.8,3.5,15,63],["DIG003","Estomazil 6 env","Digestivo","Distribuidora Farma Sul",9.5,16.9,20,19],["DIG004","Omeprazol 20 mg 28 caps","Digestivo","Distribuidora Farma Sul",8.9,18.5,5,17],["DIG005","Luftal gotas 15 ml","Digestivo","Distribuidora Farma Sul",8.0,14.5,10,24],["DIG006","Simeticona 40 mg 20 comp","Digestivo","Distribuidora Farma Sul",5.2,9.9,15,14],["DIG007","Dramin 30 comp","Digestivo","Distribuidora Farma Sul",11.0,19.5,20,58],["DIG008","Plasil 10 mg 20 comp","Digestivo","Distribuidora Farma Sul",7.5,13.9,5,25],["DIG009","Floratil 200 mg 4 caps","Digestivo","Distribuidora Farma Sul",24.0,42.9,10,52],["DIG010","Leite de magnésia 120 ml","Digestivo","Distribuidora Farma Sul",7.0,12.9,15,59],["DIG011","Imosec 12 caps","Digestivo","Distribuidora Farma Sul",14.0,24.5,20,0],["DIG012","Soro de reidratação oral","Digestivo","Distribuidora Farma Sul",3.5,6.9,5,13],["VIT001","Vitamina C 1 g 10 efervescentes","Vitaminas e Suplementos","Pharma Brasil Atacado",9.0,16.9,10,20],["VIT002","Cewin gotas 20 ml","Vitaminas e Suplementos","Pharma Brasil Atacado",6.5,11.9,15,12],["VIT003","Centrum 60 comp","Vitaminas e Suplementos","Pharma Brasil Atacado",45.0,79.9,20,54],["VIT004","Vitamina D 2000 UI 30 caps","Vitaminas e Suplementos","Pharma Brasil Atacado",18.0,34.9,5,21],["VIT005","Ômega 3 1000 mg 60 caps","Vitaminas e Suplementos","Pharma Brasil Atacado",28.0,52.9,10,48],["VIT006","Complexo B 30 comp","Vitaminas e Suplementos","Pharma Brasil Atacado",12.0,22.5,15,55],["VIT007","Cálcio + D 60 comp","Vitaminas e Suplementos","Pharma Brasil Atacado",17.0,31.9,20,0],["VIT008","Magnésio 60 caps","Vitaminas e Suplementos","Pharma Brasil Atacado",15.0,28.9,5,49],["VIT009","Colágeno hidrolisado 30 sachês","Vitaminas e Suplementos","Pharma Brasil Atacado",38.0,69.9,10,56],["VIT010","Biotina 30 caps","Vitaminas e Suplementos","Pharma Brasil Atacado",14.0,26.9,15,13],["VIT011","Ferro quelato 30 caps","Vitaminas e Suplementos","Pharma Brasil Atacado",16.0,29.5,20,50],["VIT012","Zinco 30 caps","Vitaminas e Suplementos","Pharma Brasil Atacado",11.0,20.9,5,17],["VIT013","Polivitamínico infantil gomas 60 un","Vitaminas e Suplementos","Pharma Brasil Atacado",22.0,39.9,10,44],["DER001","Protetor solar FPS 50 120 ml","Dermocosméticos","Dermo Distribuidora",32.0,59.9,15,51],["DER002","Protetor facial FPS 60 40 g","Dermocosméticos","Dermo Distribuidora",38.0,69.9,20,58],["DER003","Hidratante corporal 400 ml","Dermocosméticos","Dermo Distribuidora",14.0,26.9,5,45],["DER004","Hidratante facial 50 g","Dermocosméticos","Dermo Distribuidora",26.0,47.9,10,52],["DER005","Sabonete facial 150 ml","Dermocosméticos","Dermo Distribuidora",18.0,32.9,15,14],["DER006","Água micelar 200 ml","Dermocosméticos","Dermo Distribuidora",20.0,36.9,20,46],["DER007","Creme para assaduras 45 g","Dermocosméticos","Dermo Distribuidora",9.5,17.9,5,13],["DER008","Pomada Bepantol 30 g","Dermocosméticos","Dermo Distribuidora",17.0,31.9,10,9],["DER009","Hipoglós 45 g","Dermocosméticos","Dermo Distribuidora",12.0,21.9,15,47],["DER010","Protetor labial FPS 30","Dermocosméticos","Dermo Distribuidora",6.5,12.5,20,54],["DER011","Sérum vitamina C 30 ml","Dermocosméticos","Dermo Distribuidora",44.0,79.9,5,41],["DER012","Loção pós-sol 200 ml","Dermocosméticos","Dermo Distribuidora",19.0,34.5,10,48],["DER013","Gel de babosa 200 g","Dermocosméticos","Dermo Distribuidora",8.5,15.9,15,0],["HIG001","Escova dental macia","Higiene Pessoal","Medley Distribuidora",3.2,6.5,20,42],["HIG002","Creme dental 90 g","Higiene Pessoal","Medley Distribuidora",2.9,5.9,5,49],["HIG003","Fio dental 50 m","Higiene Pessoal","Medley Distribuidora",3.8,7.5,10,7],["HIG004","Enxaguante bucal 500 ml","Higiene Pessoal","Medley Distribuidora",10.0,18.9,15,43],["HIG005","Sabonete em barra 85 g","Higiene Pessoal","Medley Distribuidora",1.3,2.6,20,50],["HIG006","Shampoo anticaspa 200 ml","Higiene Pessoal","Medley Distribuidora",13.0,24.9,5,37],["HIG007","Condicionador 200 ml","Higiene Pessoal","Medley Distribuidora",8.5,15.9,10,44],["HIG008","Desodorante aerosol 150 ml","Higiene Pessoal","Medley Distribuidora",9.5,17.9,15,0],["HIG009","Absorvente com abas 8 un","Higiene Pessoal","Medley Distribuidora",3.5,6.9,20,78],["HIG010","Papel higiênico 12 rolos","Higiene Pessoal","Medley Distribuidora",14.0,24.9,5,45],["HIG011","Lenço umedecido 50 un","Higiene Pessoal","Medley Distribuidora",5.0,9.9,10,8],["HIG012","Álcool em gel 70% 500 g","Higiene Pessoal","Medley Distribuidora",6.5,12.5,15,39],["HIG013","Cotonete 150 hastes","Higiene Pessoal","Medley Distribuidora",2.8,5.5,20,46],["PRI001","Curativo adesivo 40 un","Primeiros Socorros","Pharma Brasil Atacado",3.5,7.5,5,33],["PRI002","Gaze estéril 10 un","Primeiros Socorros","Pharma Brasil Atacado",2.5,5.5,10,40],["PRI003","Atadura de crepe 10 cm","Primeiros Socorros","Pharma Brasil Atacado",2.2,4.9,15,47],["PRI004","Esparadrapo 10 cm x 4,5 m","Primeiros Socorros","Pharma Brasil Atacado",3.8,7.9,20,74],["PRI005","Água oxigenada 10 vol 100 ml","Primeiros Socorros","Pharma Brasil Atacado",1.8,3.9,5,41],["PRI006","Álcool 70% 1 L","Primeiros Socorros","Pharma Brasil Atacado",5.5,10.9,10,9],["PRI007","Povidine tópico 100 ml","Primeiros Socorros","Pharma Brasil Atacado",11.0,19.9,15,35],["PRI008","Merthiolate spray 30 ml","Primeiros Socorros","Pharma Brasil Atacado",9.0,16.5,20,42],["PRI009","Termômetro digital","Primeiros Socorros","Pharma Brasil Atacado",12.0,22.9,5,4],["PRI010","Máscara descartável 50 un","Primeiros Socorros","Pharma Brasil Atacado",9.0,17.9,10,36],["PRI011","Luva de procedimento 100 un","Primeiros Socorros","Pharma Brasil Atacado",22.0,39.9,15,43],["PRI012","Soro fisiológico 500 ml","Primeiros Socorros","Pharma Brasil Atacado",3.8,7.5,20,70],["INF001","Fralda descartável M 30 un","Infantil e Bebê","Distribuidora Farma Sul",34.0,59.9,5,37],["INF002","Fralda descartável G 28 un","Infantil e Bebê","Distribuidora Farma Sul",34.0,59.9,10,0],["INF003","Lenço umedecido bebê 100 un","Infantil e Bebê","Distribuidora Farma Sul",7.5,14.9,15,31],["INF004","Pomada para assaduras 80 g","Infantil e Bebê","Distribuidora Farma Sul",13.0,23.9,20,78],["INF005","Shampoo infantil 200 ml","Infantil e Bebê","Distribuidora Farma Sul",8.0,14.5,5,2],["INF006","Sabonete infantil 80 g","Infantil e Bebê","Distribuidora Farma Sul",2.2,4.5,10,32],["INF007","Chupeta ortodôntica","Infantil e Bebê","Distribuidora Farma Sul",7.0,13.9,15,39],["INF008","Mamadeira 260 ml","Infantil e Bebê","Distribuidora Farma Sul",16.0,29.9,20,66],["INF009","Paracetamol infantil 100 ml","Infantil e Bebê","Distribuidora Farma Sul",6.5,11.9,5,33],["INF010","Dipirona infantil gotas 10 ml","Infantil e Bebê","Distribuidora Farma Sul",3.5,6.9,10,0],["INF011","Soro nasal infantil 30 ml","Infantil e Bebê","Distribuidora Farma Sul",4.8,9.5,15,67],["INF012","Fórmula infantil 400 g","Infantil e Bebê","Distribuidora Farma Sul",38.0,64.9,20,74]].forEach((a,i)=>{
+    if(db.produtos.some(p=>p.sku===a[0]))return;const p={id:uid(),sku:a[0],nome:a[1],cat:a[2],forn:a[3],custo:a[4],preco:a[5],min:a[6],qtd:a[7]};db.produtos.push(p);
+    if(p.qtd){const s=p.qtd>8?Math.ceil(p.qtd/5):0,t0=Date.now()-86400000*(3+i%5);db.movs.push({id:uid(),pid:p.id,nome:p.nome,tipo:'entrada',qtd:p.qtd+s,apos:p.qtd+s,motivo:'Estoque inicial',data:t0});if(s)db.movs.push({id:uid(),pid:p.id,nome:p.nome,tipo:'saida',qtd:s,apos:p.qtd,motivo:'Venda',data:t0+18000000})}});
+  save();render();toast('Exemplos adicionados')};
+$('#limpar').onclick=async()=>{if(await ask('Apagar todos os produtos, movimentações e cadastros? Esta ação não pode ser desfeita.')){db={produtos:[],movs:[],categorias:['Geral'],fornecedores:[]};save();render();toast('Dados apagados')}};
+
+function render(){renderPainel();renderProdutos();renderMovs();renderCad()}
+if(fresh)$('#demo').onclick();else render();
+</script>
+</body>
+</html>
